@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#a81e55">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Ultah Ayang">
+<title>Pengingat Ultah buat Ayang</title>
+<style>
+  :root {
+    --bg: #fbf5f3; --card: #ffffff; --ink: #2b1a21; --muted: #8a747c;
+    --accent: #a81e55; --accent-soft: #fbe3ec; --line: #eeddd9; --ok: #2f7d5b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    padding: 0 16px calc(96px + env(safe-area-inset-bottom));
+  }
+  main { max-width: 520px; margin: 0 auto; }
+  header { padding: 22px 0 6px; }
+  h1 { font-size: 22px; margin: 0; letter-spacing: -0.01em; }
+  .today { color: var(--muted); font-size: 14px; margin-top: 2px; }
+  h2 {
+    font-size: 12px; text-transform: uppercase; letter-spacing: .08em;
+    color: var(--muted); margin: 26px 0 10px; font-weight: 600;
+  }
+  .card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 16px;
+    padding: 14px 16px; margin-bottom: 10px;
+  }
+  .card.due { border-color: var(--accent); box-shadow: 0 2px 10px rgba(168,30,85,.10); }
+  .row { display: flex; align-items: center; gap: 12px; }
+  .who { flex: 1; min-width: 0; }
+  .name { font-weight: 600; overflow-wrap: anywhere; }
+  .meta { color: var(--muted); font-size: 14px; }
+  .pill {
+    flex: none; font-size: 13px; font-weight: 600; padding: 4px 10px;
+    border-radius: 999px; background: var(--accent-soft); color: var(--accent);
+    font-variant-numeric: tabular-nums;
+  }
+  .pill.far { background: #f3ecea; color: var(--muted); }
+  .pill.sent { background: #e2f3ea; color: var(--ok); }
+  pre.msg {
+    white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; font-size: 15px;
+    background: var(--bg); border-radius: 12px; padding: 12px; margin: 12px 0;
+  }
+  button {
+    font: inherit; font-weight: 600; border: 0; border-radius: 12px;
+    padding: 12px 16px; min-height: 46px; cursor: pointer;
+    background: var(--accent); color: #fff;
+  }
+  button.ghost { background: transparent; color: var(--accent); border: 1px solid var(--line); }
+  button.small { min-height: 38px; padding: 8px 12px; font-size: 14px; }
+  .actions { display: flex; gap: 8px; }
+  .actions button:first-child { flex: 1; }
+  .empty { color: var(--muted); font-size: 15px; padding: 6px 2px; }
+  .tabs {
+    position: fixed; left: 0; right: 0; bottom: 0; display: flex; justify-content: center;
+    background: var(--card); border-top: 1px solid var(--line);
+    padding: 6px 16px calc(6px + env(safe-area-inset-bottom));
+  }
+  .tabs button {
+    flex: 1; max-width: 260px; background: transparent; color: var(--muted); border-radius: 10px;
+  }
+  .tabs button[aria-current="page"] { color: var(--accent); background: var(--accent-soft); }
+  footer { text-align: center; color: var(--muted); font-size: 13px; margin: 28px 0 8px; }
+  .next { color: var(--muted); font-size: 14px; padding: 8px 2px; }
+  .big { font-size: 34px; font-weight: 700; color: var(--accent); letter-spacing: -0.02em; margin-top: 10px; }
+  .big small { font-size: 15px; font-weight: 500; color: var(--muted); letter-spacing: 0; }
+  dialog {
+    border: 0; border-radius: 18px; padding: 20px; width: min(520px, calc(100vw - 24px));
+    max-height: calc(100vh - 24px); color: var(--ink);
+  }
+  dialog::backdrop { background: rgba(43,26,33,.45); }
+  dialog h3 { margin: 0 0 12px; font-size: 18px; }
+  label { display: block; font-size: 14px; font-weight: 600; margin: 14px 0 6px; }
+  textarea, input[type=text], input[type=number] {
+    width: 100%; font: inherit; color: inherit; background: var(--bg);
+    border: 1px solid var(--line); border-radius: 12px; padding: 11px 12px;
+  }
+  textarea { min-height: 220px; resize: vertical; font-size: 15px; }
+  .two { display: flex; gap: 10px; }
+  .two > div { flex: 1; }
+  .err { color: #b3261e; font-size: 14px; margin-top: 8px; white-space: pre-wrap; }
+  #toast {
+    position: fixed; left: 50%; bottom: 92px; transform: translateX(-50%);
+    background: var(--ink); color: #fff; padding: 10px 16px; border-radius: 999px;
+    font-size: 14px; opacity: 0; transition: opacity .2s; pointer-events: none;
+  }
+  #toast.show { opacity: 1; }
+  :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Pengingat Ultah buat Ayang 🌷</h1>
+    <div class="today" id="today"></div>
+  </header>
+
+  <section id="pageHome">
+    <h2 id="dueTitle">Kirim sekarang</h2>
+    <div id="due"></div>
+    <div class="next" id="next"></div>
+  </section>
+
+  <section id="pageList" hidden>
+    <h2>Semua ulang tahun</h2>
+    <div id="upcoming"></div>
+    <button id="manageBtn" class="ghost" style="width:100%;background:var(--card);margin-top:6px">Ubah daftar</button>
+  </section>
+
+  <footer>© <span id="year"></span> by Lekka with Love 💕</footer>
+</main>
+
+<nav class="tabs" aria-label="Halaman">
+  <button data-page="Home" aria-current="page">Beranda</button>
+  <button data-page="List">Daftar</button>
+</nav>
+
+<dialog id="dlg">
+  <h3>Ubah daftar</h3>
+  <textarea id="listText" spellcheck="false" aria-label="Daftar ulang tahun" placeholder="Nama (Jabatan) - 18 Nov"></textarea>
+  <div class="err" id="err"></div>
+  <div style="margin-top:10px">
+    <button class="ghost small" id="fileBtn" type="button">Ambil dari file</button>
+    <input type="file" id="file" accept=".txt,.csv,text/plain,text/csv" hidden>
+  </div>
+  <div class="two">
+    <div><label for="boss">Nama atasan</label><input type="text" id="boss"></div>
+    <div><label for="lead">Ingatkan H-</label><input type="number" id="lead" min="1" max="60" inputmode="numeric"></div>
+  </div>
+  <div class="actions" style="margin-top:18px">
+    <button id="saveBtn" type="button">Simpan</button>
+    <button class="ghost" id="cancelBtn" type="button">Batal</button>
+  </div>
+</dialog>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  var MONTHS_EN = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  var MONTHS_ID = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+  var DAYS_EN = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  var DAYS_ID = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+  var MONTH_KEYS = { jan:1, feb:2, mar:3, apr:4, mei:5, may:5, jun:6, jul:7, agu:8, agt:8, aug:8, sep:9, okt:10, oct:10, nov:11, des:12, dec:12 };
+
+  var DUMMY = [
+    { name: 'Yoga', role: '', d: 18, m: 11 },
+    { name: 'Siti', role: 'Penjahit', d: 20, m: 11 },
+    { name: 'Pak Udin', role: 'Cleaning', d: 2, m: 12 },
+    { name: 'Dewi', role: 'Admin', d: 14, m: 1 },
+    { name: 'Rina', role: 'Penjahit', d: 3, m: 3 },
+    { name: 'Agus', role: 'Driver', d: 27, m: 6 }
+  ];
+
+  // Penyimpanan: semua data hanya tersimpan di HP ini.
+  function load(key, fallback) {
+    try { var v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }
+    catch (e) { return fallback; }
+  }
+  function save(key, value) {
+    try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) {}
+  }
+
+  var people = load('ultah_people', null);
+  var isDummy = !people;
+  if (!people) people = DUMMY;
+  var sent = load('ultah_sent', {});
+  var cfg = load('ultah_cfg', { boss: 'Ms. Persi', lead: 7 });
+
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function ordinal(n) {
+    var t = n % 100;
+    if (t >= 11 && t <= 13) return n + 'th';
+    return n + (['th','st','nd','rd'][n % 10] || 'th');
+  }
+  function startOfToday() { var t = new Date(); return new Date(t.getFullYear(), t.getMonth(), t.getDate()); }
+  function nextBirthday(p, today) {
+    var date = new Date(today.getFullYear(), p.m - 1, p.d);
+    if (date < today) date = new Date(today.getFullYear() + 1, p.m - 1, p.d);
+    return date;
+  }
+  function daysBetween(a, b) { return Math.round((b - a) / 86400000); }
+  function keyOf(p) { return p.name.toLowerCase() + '|' + p.d + '|' + p.m; }
+
+  function message(p, date, days) {
+    var wd = DAYS_EN[date.getDay()];
+    var when;
+    if (days === 0) when = 'today, ' + wd;
+    else if (days === 1) when = 'tomorrow, ' + wd;
+    else if (days < 7) when = 'on this ' + wd;
+    else if (days < 14) when = 'on Next ' + wd;
+    else when = 'on ' + wd;
+    var who = p.name + (p.role ? ' (' + p.role + ')' : '');
+    return 'Good Day ' + cfg.boss + ', 🙏🌷💕\n\n' +
+      who + "'s birthday is " + when + ' ' + ordinal(date.getDate()) + ' of ' +
+      MONTHS_EN[date.getMonth()] + ' ' + date.getFullYear() + ', ' + cfg.boss + '. 🙏🌷💕';
+  }
+
+  function countdown(days) {
+    if (days === 0) return 'Hari ini';
+    if (days === 1) return 'Besok';
+    return days + ' hari lagi';
+  }
+
+  var items = [];
+
+  function render() {
+    var today = startOfToday();
+    document.getElementById('today').textContent =
+      DAYS_ID[today.getDay()] + ', ' + today.getDate() + ' ' + MONTHS_ID[today.getMonth()] + ' ' + today.getFullYear();
+
+    items = people.map(function (p) {
+      var date = nextBirthday(p, today);
+      var days = daysBetween(today, date);
+      return { p: p, date: date, days: days, text: message(p, date, days),
+               isSent: sent[keyOf(p)] === date.getFullYear() };
+    }).sort(function (a, b) { return a.days - b.days; });
+
+    var dueHtml = '', upHtml = '', pending = [];
+    items.forEach(function (it, i) {
+      var dateLabel = DAYS_ID[it.date.getDay()] + ', ' + it.date.getDate() + ' ' + MONTHS_ID[it.date.getMonth()];
+      var head =
+        '<div class="row"><div class="who"><div class="name">' + esc(it.p.name) + '</div>' +
+        '<div class="meta">' + (it.p.role ? esc(it.p.role) + ' · ' : '') + dateLabel + '</div></div>';
+      if (it.days <= cfg.lead && !it.isSent) {
+        dueHtml += '<div class="card due">' + head +
+          '<span class="pill">' + countdown(it.days) + '</span></div>' +
+          '<pre class="msg">' + esc(it.text) + '</pre>' +
+          '<div class="actions"><button data-copy="' + i + '">Salin pesan</button>' +
+          '<button class="ghost" data-sent="' + i + '">Sudah dikirim</button></div></div>';
+      }
+      if (!it.isSent && it.days > cfg.lead) pending.push(it);
+      {
+        upHtml += '<div class="card">' + head +
+          (it.isSent
+            ? '<button class="ghost small" data-unsent="' + i + '" aria-label="Batalkan tanda terkirim">✓ Terkirim</button>'
+            : '<span class="pill' + (it.days <= cfg.lead ? '' : ' far') + '">' + countdown(it.days) + '</span>') +
+          '</div></div>';
+      }
+    });
+
+    document.getElementById('dueTitle').textContent = 'Kirim sekarang';
+    var nextEl = document.getElementById('next');
+    nextEl.textContent = '';
+    if (!dueHtml) {
+      document.getElementById('dueTitle').textContent = 'Paling dekat';
+      if (pending.length) {
+        var first = pending.filter(function (x) { return x.days === pending[0].days; });
+        dueHtml = '';
+        first.forEach(function (it) {
+          dueHtml += '<div class="card"><div class="name">' + esc(it.p.name) + '</div>' +
+            '<div class="meta">' + (it.p.role ? esc(it.p.role) + ' · ' : '') +
+            DAYS_ID[it.date.getDay()] + ', ' + it.date.getDate() + ' ' + MONTHS_ID[it.date.getMonth()] + '</div>' +
+            '<div class="big">' + it.days + ' <small>hari lagi</small></div>' + '</div>';
+        });
+      } else {
+        dueHtml = '<div class="empty">' + (people.length ? 'Semua sudah dikabari 🎉' : 'Daftar masih kosong.') + '</div>';
+      }
+    } else if (pending.length) {
+      nextEl.textContent = 'Berikutnya: ' + pending[0].p.name + ', ' + pending[0].days + ' hari lagi';
+    }
+    document.getElementById('due').innerHTML = dueHtml;
+    document.getElementById('upcoming').innerHTML = upHtml ||
+      '<div class="empty">' + (people.length ? 'Tidak ada yang lain.' : 'Daftar masih kosong.') + '</div>';
+  }
+
+  function toast(text) {
+    var el = document.getElementById('toast');
+    el.textContent = text; el.classList.add('show');
+    clearTimeout(toast.t); toast.t = setTimeout(function () { el.classList.remove('show'); }, 1800);
+  }
+
+  function copyText(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+      return navigator.clipboard.writeText(text).catch(function () { return legacyCopy(text); });
+    }
+    return Promise.resolve(legacyCopy(text));
+  }
+  function legacyCopy(text) {
+    var ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); } catch (e) {}
+    document.body.removeChild(ta);
+  }
+
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (!b) return;
+    var it;
+    if (b.dataset.copy !== undefined) {
+      it = items[+b.dataset.copy];
+      copyText(it.text).then(function () { toast('Pesan disalin'); });
+    } else if (b.dataset.sent !== undefined) {
+      it = items[+b.dataset.sent];
+      sent[keyOf(it.p)] = it.date.getFullYear(); save('ultah_sent', sent); render();
+      toast('Terkirim ✓');
+    } else if (b.dataset.unsent !== undefined) {
+      it = items[+b.dataset.unsent];
+      delete sent[keyOf(it.p)]; save('ultah_sent', sent); render();
+    }
+  });
+
+  document.querySelector('.tabs').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-page]'); if (!b) return;
+    ['Home', 'List'].forEach(function (name) {
+      document.getElementById('page' + name).hidden = name !== b.dataset.page;
+    });
+    document.querySelectorAll('.tabs button').forEach(function (t) {
+      if (t === b) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current');
+    });
+    window.scrollTo(0, 0);
+  });
+
+  // ---- Kelola daftar ----
+  function toLines(list) {
+    return list.map(function (p) {
+      return p.name + (p.role ? ' (' + p.role + ')' : '') + ' - ' + p.d + ' ' + MONTHS_ID[p.m - 1];
+    }).join('\n');
+  }
+
+  function parseLines(text) {
+    var out = [], bad = [];
+    text.split(/\r?\n/).forEach(function (raw, idx) {
+      var line = raw.trim(); if (!line) return;
+      var m = line.match(/(\d{1,2})[\s\/\-.]+(\d{1,2}|[A-Za-z]+)(?:[\s\/\-.,]+\d{2,4})?\s*$/);
+      if (!m) { bad.push(idx + 1); return; }
+      var day = +m[1], month;
+      if (/^\d+$/.test(m[2])) month = +m[2];
+      else month = MONTH_KEYS[m[2].toLowerCase().slice(0, 3)];
+      var maxDay = month ? new Date(2024, month, 0).getDate() : 0;
+      if (!month || month > 12 || day < 1 || day > maxDay) { bad.push(idx + 1); return; }
+      var rest = line.slice(0, m.index).replace(/[\s\-,;:|\t]+$/, '').trim();
+      var role = '';
+      var paren = rest.match(/^(.*?)\s*\(([^)]*)\)\s*$/);
+      if (paren) { rest = paren[1].trim(); role = paren[2].trim(); }
+      else {
+        var parts = rest.split(/\s*[,;|\t]\s*/);
+        if (parts.length > 1) { rest = parts[0].trim(); role = parts.slice(1).join(', ').trim(); }
+      }
+      if (!rest) { bad.push(idx + 1); return; }
+      out.push({ name: rest, role: role, d: day, m: month });
+    });
+    return { list: out, bad: bad };
+  }
+
+  var dlg = document.getElementById('dlg');
+  var listText = document.getElementById('listText');
+  var err = document.getElementById('err');
+
+  document.getElementById('manageBtn').addEventListener('click', function () {
+    listText.value = toLines(people);
+    document.getElementById('boss').value = cfg.boss;
+    document.getElementById('lead').value = cfg.lead;
+    err.textContent = '';
+    dlg.showModal();
+  });
+  document.getElementById('cancelBtn').addEventListener('click', function () { dlg.close(); });
+  document.getElementById('fileBtn').addEventListener('click', function () { document.getElementById('file').click(); });
+  document.getElementById('file').addEventListener('change', function (e) {
+    var f = e.target.files[0]; if (!f) return;
+    var r = new FileReader();
+    r.onload = function () { listText.value = String(r.result).trim(); err.textContent = ''; };
+    r.readAsText(f);
+    e.target.value = '';
+  });
+  document.getElementById('saveBtn').addEventListener('click', function () {
+    var res = parseLines(listText.value);
+    if (res.bad.length) {
+      err.textContent = 'Tanggal di baris ' + res.bad.join(', ') + ' tidak terbaca.';
+      return;
+    }
+    people = res.list; isDummy = false; save('ultah_people', people);
+    var lead = parseInt(document.getElementById('lead').value, 10);
+    cfg = {
+      boss: document.getElementById('boss').value.trim() || 'Ms. Persi',
+      lead: lead >= 1 && lead <= 60 ? lead : 7
+    };
+    save('ultah_cfg', cfg);
+    dlg.close(); render(); toast('Daftar disimpan (' + people.length + ' orang)');
+  });
+
+  document.getElementById('year').textContent = new Date().getFullYear();
+  render();
+  // Segarkan saat app dibuka lagi di hari berikutnya.
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) render(); });
+})();
+</script>
+</body>
+</html>
